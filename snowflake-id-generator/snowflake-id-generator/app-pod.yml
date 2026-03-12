@@ -23,8 +23,8 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-            path: /healthy
-            port: 8080
+              path: /healthy
+              port: 8080
             initialDelaySeconds: 15
             timeoutSeconds: 2
             periodSeconds: 20

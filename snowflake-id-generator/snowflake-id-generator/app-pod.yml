@@ -3,7 +3,7 @@ kind: ReplicaSet
 metadata:
   name: ilmir
   labels:
-    app: snowflake
+    app: ilmir
 spec:
   replicas: 3
   selector:
@@ -45,7 +45,7 @@ metadata:
   name: ilmir-service
 spec:
   selector:
-    app: snowflake
+    app: ilmir
   ports:
     - name: http
       port: 8080

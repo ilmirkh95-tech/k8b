@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: ilmir-ingress
   annotations:
-    kubernetes.io/ingress.class: contour
+    spec.ingressClassName: contour
 spec:
   rules:
   - host: snowflake.dev.local

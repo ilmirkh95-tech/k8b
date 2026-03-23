@@ -15,15 +15,15 @@ spec:
         app: ilmir
     spec:
       containers:
-        - name: kuard
-          image: jmutai/kuard-amd64:latest
+        - name: myapp
+          image: myapp:1.0
           ports:
             - containerPort: 8080
               name: http
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /healthy
+              path: /management/health/liveness
               port: 8080
             initialDelaySeconds: 15
             timeoutSeconds: 2
@@ -31,7 +31,7 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /management/health/readiness
               port: 8080
             initialDelaySeconds: 5
             timeoutSeconds: 1

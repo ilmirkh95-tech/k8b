@@ -2,9 +2,12 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ilmir-ingress
-  annotations:
-    spec.ingressClassName: contour
 spec:
+  ingressClassName: contour
+  tls:
+    - hosts:
+      - snowflake.dev.local
+      secretName: ilmir-tls
   rules:
   - host: snowflake.dev.local
     http:

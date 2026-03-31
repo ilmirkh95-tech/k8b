@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ilmir
+  labels:
+    app: ilmir
+  annotations:
+    kubernetes.io/change-cause: "Update to 1.0.0"
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: ilmir
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 40%
+      maxSurge: 30%
+  template:
+    metadata:
+      labels:
+        app: ilmir
+    spec:
+      initContainers:
+        - name: worker-id-generator
+          image: busybox:1.36
+          command: ['sh', '-c']
+          args:
+            - |
+              WORKER_ID=$(echo $POD_NAME | sed 's/.*-//' | head -c 3)
+              if [ -z "$WORKER_ID" ] || [ "$WORKER_ID" = "000" ]; then
+                WORKER_ID=$((RANDOM % 1024))
+              fi
+              echo "Generated worker-id: $WORKER_ID for pod: $POD_NAME"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: ilmir-config-volume
+              mountPath: /config
+      containers:
+        - name: snowflake
+          image: myapp:1.0
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: ilmir-config
+                  key: LOG_LEVEL
+            - name: MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: ilmir-config
+                  key: MESSAGE
+            - name: spring.application.name
+              valueFrom:
+                configMapKeyRef:
+                  name: ilmir-config
+                  key: spring.application.name
+            - name: snowflake-settings.starting-epoch
+              valueFrom:
+                configMapKeyRef:
+                  name: ilmir-config
+                  key: snowflake-settings.starting-epoch
+            - name: snowflake-settings.datacenter-id
+              valueFrom:
+                configMapKeyRef:
+                  name: ilmir-config
+                  key: snowflake-settings.datacenter-id
+            - name: snowflake-settings.worker-id
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['worker-id']
+          volumeMounts:
+            - name: ilmir-config-volume
+              mountPath: /config
+              readOnly: true
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /management/health/liveness
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /management/health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+      volumes:
+        - name: ilmir-config-volume
+          configMap:
+            name: ilmir-config

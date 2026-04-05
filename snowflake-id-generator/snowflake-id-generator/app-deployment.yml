@@ -73,6 +73,18 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.annotations['worker-id']
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-0.postgres:5432/kuard_db"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: postgres-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: postgres-password
           volumeMounts:
             - name: ilmir-config-volume
               mountPath: /config

@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ilmir
+  name: {{ .Chart.Name }}
   labels:
-    app: ilmir
+    {{- include "ilmir.labels" . | nindent 4 }}
   annotations:
-    kubernetes.io/change-cause: "Update to 1.0.0"
+    kubernetes.io/change-cause: "Helm upgrade {{ .Chart.AppVersion }}"
 spec:
-  replicas: 2
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: ilmir
+      app: {{ .Chart.Name }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,7 +19,7 @@ spec:
   template:
     metadata:
       labels:
-        app: ilmir
+        app: {{ .Chart.Name }}
     spec:
       initContainers:
         - name: worker-id-generator
@@ -42,7 +42,7 @@ spec:
               mountPath: /config
       containers:
         - name: snowflake
-          image: myapp:1.0
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           env:
             - name: LOG_LEVEL
               valueFrom:
@@ -74,17 +74,17 @@ spec:
                 fieldRef:
                   fieldPath: metadata.annotations['worker-id']
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://postgres-0.postgres:5432/kuard_db"
+              value: {{ .Values.postgres.url | quote }}
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 configMapKeyRef:
-                  name: postgres-config
-                  key: postgres-user
+                  name: {{ .Values.postgres.userConfigMap }}
+                  key: {{ .Values.postgres.userKey }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secrets
-                  key: postgres-password
+                  name: {{ .Values.postgres.passwordSecret }}
+                  key: {{ .Values.postgres.passwordKey }}
           volumeMounts:
             - name: ilmir-config-volume
               mountPath: /config
@@ -94,12 +94,7 @@ spec:
               name: http
               protocol: TCP
           resources:
-            requests:
-              cpu: "500m"
-              memory: "256Mi"
-            limits:
-              cpu: "1000m"
-              memory: "500Gi"
+            {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /management/health/liveness
